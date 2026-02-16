@@ -4,6 +4,7 @@ Shared models used across the application
 """
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from django.utils import timezone 
 from django.core.validators import RegexValidator
 
 
@@ -30,7 +31,7 @@ class User(AbstractUser):
         unique=True,
         help_text="Rwanda phone number in format: +250 7XX XXX XXX"
     )
-    
+    date_joined = models.DateTimeField(default=timezone.now)
     # National ID - 16 digits
     national_id = models.CharField(
         max_length=16,
