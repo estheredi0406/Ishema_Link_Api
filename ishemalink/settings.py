@@ -190,3 +190,21 @@ SMS_SENDER_NAME = 'IshemaLink'
 # Email Settings (using console backend for testing)
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 DEFAULT_FROM_EMAIL = 'noreply@ishemalink.rw'
+
+
+# Redis Cache Configuration
+CACHES = {
+    'default': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': 'redis://127.0.0.1:6379/1',  # Different DB than Celery
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+        },
+        'KEY_PREFIX': 'ishemalink',
+        'TIMEOUT': 60 * 60 * 24,  # 24 hours default
+    }
+}
+
+# Cache time-to-live (TTL) settings
+TARIFF_CACHE_TTL = 60 * 60 * 24 * 7  # 7 days for tariffs
+LOCATION_CACHE_TTL = 60 * 60 * 24 * 30  # 30 days for location data
