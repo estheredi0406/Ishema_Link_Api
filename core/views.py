@@ -15,6 +15,8 @@ from .serializers import (
     UserSerializer,
     NIDVerificationSerializer
 )
+# Add these imports at the top
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 User = get_user_model()
 

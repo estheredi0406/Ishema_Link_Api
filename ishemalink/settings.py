@@ -40,17 +40,18 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     
     # Third-party apps
-    'rest_framework',           # Django REST Framework
-    'drf_spectacular',          # API Documentation
-    'corsheaders',              # CORS headers
-    'django_extensions',        # Extra commands
+    'rest_framework',
+    'drf_spectacular',
+    'corsheaders',
+    'django_extensions',
+    'django_celery_results',
+    'django_filters',          # Make sure there's a comma here!
     
     # Our apps
-    'core',                     # Shared utilities (User, Location)
-    'domestic',                 # Local shipments
-    'international',            # Cross-border shipments
+    'core',
+    'domestic',
+    'international',
 ]
-
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',  # ADD THIS - Must be at top
     'django.middleware.security.SecurityMiddleware',
@@ -164,3 +165,28 @@ LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'Africa/Kigali'      # Rwanda timezone
 USE_I18N = True
 USE_TZ = True 
+
+# Custom User Model
+AUTH_USER_MODEL = 'core.User'
+
+# Default primary key field type
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Celery Configuration
+CELERY_BROKER_URL = 'redis://localhost:6379/0'
+CELERY_RESULT_BACKEND = 'django-db'
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'Africa/Kigali'
+CELERY_TASK_TRACK_STARTED = True
+CELERY_TASK_TIME_LIMIT = 30 * 60  # 30 minutes max per task
+
+# SMS Gateway Settings (simulated for now)
+SMS_GATEWAY_URL = config('SMS_GATEWAY_URL', default='https://sms.example.com/send')
+SMS_API_KEY = config('SMS_API_KEY', default='test-api-key')
+SMS_SENDER_NAME = 'IshemaLink'
+
+# Email Settings (using console backend for testing)
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+DEFAULT_FROM_EMAIL = 'noreply@ishemalink.rw'
