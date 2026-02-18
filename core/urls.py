@@ -5,7 +5,8 @@ from django.urls import path
 from rest_framework_simplejwt.views import TokenRefreshView
 from . import views
 from . import auth_views
-from . import identity_views  # ADD THIS
+from . import identity_views
+from . import privacy_views  # ADD THIS
 from .jwt_serializers import CustomTokenObtainPairView
 
 app_name = 'core'
@@ -31,21 +32,23 @@ urlpatterns = [
     path('auth/verify-nid/', views.NIDVerificationView.as_view(), name='verify-nid'),
     path('users/me/', views.UserProfileView.as_view(), name='user-profile'),
     
-    # ========================================================================
-    # IDENTITY & KYC ENDPOINTS (Task 2)
-    # ========================================================================
-    
-    # Phone Verification
+    # Identity & KYC Endpoints
     path('identity/send-otp/', identity_views.send_otp, name='send-otp'),
     path('identity/verify-otp/', identity_views.verify_otp, name='verify-otp'),
-    
-    # NID Verification
     path('identity/verify-nid/', identity_views.verify_nid, name='identity-verify-nid'),
-    
-    # Verification Status
     path('identity/status/', identity_views.verification_status, name='verification-status'),
-    
-    # Account Recovery
     path('identity/recover/initiate/', identity_views.recovery_initiate, name='recovery-initiate'),
     path('identity/recover/confirm/', identity_views.recovery_confirm, name='recovery-confirm'),
+    
+    # ========================================================================
+    # PRIVACY & GDPR ENDPOINTS (Task 3)
+    # ========================================================================
+    
+    # Data Export & Anonymization
+    path('privacy/my-data/', privacy_views.export_my_data, name='my-data'),
+    path('privacy/anonymize/', privacy_views.request_anonymization, name='anonymize'),
+    path('privacy/consent-history/', privacy_views.my_consent_history, name='consent-history'),
+    
+    # Admin/Compliance
+    path('compliance/audit-logs/', privacy_views.admin_audit_logs, name='audit-logs'),
 ]

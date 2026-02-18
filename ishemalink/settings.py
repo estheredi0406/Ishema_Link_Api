@@ -63,6 +63,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'axes.middleware.AxesMiddleware',  # Login rate limiting (after AuthenticationMiddleware)
+    'core.audit_middleware.AuditMiddleware'
 ]
 
 ROOT_URLCONF = 'ishemalink.urls'

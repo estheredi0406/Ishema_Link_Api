@@ -1,84 +1,63 @@
 """
-Django Admin Configuration for Core App
+Admin configuration for core app
 """
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
-from django.contrib.auth.models import Group
-from django import forms
 from .models import User
+from .audit_models import AuditLog, ConsentRecord, DataExportRequest, AnonymizationRequest
 
 
-class UserCreationForm(forms.ModelForm):
-    """Form for creating new users in admin"""
-    password1 = forms.CharField(label='Password', widget=forms.PasswordInput)
-    password2 = forms.CharField(label='Password confirmation', widget=forms.PasswordInput)
-
-    class Meta:
-        model = User
-        fields = ('phone', 'username', 'user_type')
-
-    def clean_password2(self):
-        password1 = self.cleaned_data.get("password1")
-        password2 = self.cleaned_data.get("password2")
-        if password1 and password2 and password1 != password2:
-            raise forms.ValidationError("Passwords don't match")
-        return password2
-
-    def save(self, commit=True):
-        user = super().save(commit=False)
-        user.set_password(self.cleaned_data["password1"])
-        if commit:
-            user.save()
-        return user
-
-
-class UserChangeForm(forms.ModelForm):
-    """Form for updating users in admin"""
-    class Meta:
-        model = User
-        fields = '__all__'
-
-
+@admin.register(User)
 class UserAdmin(BaseUserAdmin):
-    """
-    Custom admin interface for User model
-    """
-    form = UserChangeForm
-    add_form = UserCreationForm
+    """Custom User admin"""
+    list_display = ['phone', 'username', 'user_type', 'is_verified', 'phone_verified', 'nid_verified']
+    list_filter = ['user_type', 'is_verified', 'phone_verified', 'nid_verified']
+    search_fields = ['phone', 'username', 'national_id']
     
-    # Fields to display in the user list
-    list_display = ('phone', 'username', 'user_type', 'assigned_sector', 'is_staff', 'is_active')
-    list_filter = ('user_type', 'is_staff', 'is_active')
-    
-    # Search functionality
-    search_fields = ('phone', 'username', 'national_id', 'email')
-    ordering = ('-created_at',)
-    
-    # Fieldsets for viewing/editing existing users
     fieldsets = (
         (None, {'fields': ('phone', 'password')}),
-        ('Personal info', {'fields': ('username', 'email', 'national_id', 'user_type', 'assigned_sector')}),
-        ('Permissions', {'fields': ('is_active', 'is_staff', 'is_superuser')}),
-        ('Important dates', {'fields': ('last_login', 'date_joined', 'created_at', 'updated_at')}),
+        ('Personal Info', {'fields': ('username', 'email', 'national_id')}),
+        ('User Type', {'fields': ('user_type', 'assigned_sector')}),
+        ('Verification', {'fields': ('phone_verified', 'phone_verified_at', 'nid_verified', 'nid_verified_at', 'is_verified', 'verified_at')}),
+        ('Permissions', {'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions')}),
+        ('Important dates', {'fields': ('last_login', 'date_joined')}),
     )
+
+
+@admin.register(AuditLog)
+class AuditLogAdmin(admin.ModelAdmin):
+    """Audit Log admin - Read only"""
+    list_display = ['timestamp', 'user_phone', 'action', 'resource_type', 'resource_id', 'ip_address']
+    list_filter = ['action', 'resource_type', 'timestamp']
+    search_fields = ['user_phone', 'resource_type', 'ip_address']
+    readonly_fields = ['user', 'user_phone', 'user_type', 'action', 'resource_type', 'resource_id', 'sensitive_fields', 'timestamp', 'ip_address', 'user_agent', 'reason', 'metadata']
     
-    # Fieldsets for adding new users
-    add_fieldsets = (
-        (None, {
-            'classes': ('wide',),
-            'fields': ('phone', 'username', 'user_type', 'password1', 'password2'),
-        }),
-    )
+    def has_add_permission(self, request):
+        return False  # Cannot manually add audit logs
     
-    readonly_fields = ('created_at', 'updated_at', 'last_login', 'date_joined')
-    filter_horizontal = ()
+    def has_delete_permission(self, request, obj=None):
+        return False  # Cannot delete audit logs (compliance requirement)
 
 
-# Register the User model with the custom admin
-admin.site.register(User, UserAdmin)
+@admin.register(ConsentRecord)
+class ConsentRecordAdmin(admin.ModelAdmin):
+    """Consent tracking admin"""
+    list_display = ['user', 'consent_type', 'version', 'consented_at', 'revoked']
+    list_filter = ['consent_type', 'revoked', 'consented_at']
+    search_fields = ['user__phone']
 
-# Unregister Group model since we're not using it
-try:
-    admin.site.unregister(Group)
-except admin.sites.NotRegistered:
-    pass
+
+@admin.register(DataExportRequest)
+class DataExportRequestAdmin(admin.ModelAdmin):
+    """Data export requests admin"""
+    list_display = ['user', 'status', 'requested_at', 'completed_at']
+    list_filter = ['status', 'requested_at']
+    search_fields = ['user__phone']
+
+
+@admin.register(AnonymizationRequest)
+class AnonymizationRequestAdmin(admin.ModelAdmin):
+    """Anonymization requests admin"""
+    list_display = ['user', 'status', 'requested_at', 'processed_at', 'reviewed_by']
+    list_filter = ['status', 'requested_at']
+    search_fields = ['user__phone']
