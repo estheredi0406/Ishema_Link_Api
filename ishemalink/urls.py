@@ -17,7 +17,7 @@ urlpatterns = [
     # Core endpoints (health check, auth, users)
     path('api/', include('core.urls', namespace='core')),
     
-    # Domestic shipments  # ADD THIS
+    # Domestic shipments  
     path('api/domestic/', include('domestic.urls', namespace='domestic')),  # ADD THIS
     
     # API Documentation

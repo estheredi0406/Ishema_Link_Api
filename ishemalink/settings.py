@@ -279,7 +279,7 @@ X_FRAME_OPTIONS = 'DENY'  # Prevent clickjacking
 AXES_ENABLED = True
 AXES_FAILURE_LIMIT = 5  # Lock account after 5 failed attempts
 AXES_COOLOFF_TIME = timedelta(minutes=10)  # 10-minute lockout period
-AXES_LOCK_OUT_BY_COMBINATION_USER_AND_IP = True  # Lock by user+IP combination
+AXES_LOCKOUT_PARAMETERS = [["username", "ip_address"]] # Lock by user+IP combination
 AXES_RESET_ON_SUCCESS = True  # Reset failed attempts on successful login
 
 

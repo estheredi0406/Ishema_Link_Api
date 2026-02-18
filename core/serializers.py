@@ -80,17 +80,25 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
 
 
 class UserSerializer(serializers.ModelSerializer):
-    """
-    Serializer for user profile display
-    """
+    """Serializer for User model"""
+    verification_status = serializers.SerializerMethodField()
+    
     class Meta:
         model = User
         fields = [
-            'id', 'username', 'phone', 'national_id',
-            'user_type', 'assigned_sector', 'email',
+            'id', 'phone', 'username', 'email', 
+            'user_type', 'national_id', 'assigned_sector',
+            'phone_verified', 'nid_verified', 'is_verified',
+            'verification_status',
             'created_at', 'updated_at'
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at']
+        read_only_fields = [
+            'id', 'phone_verified', 'nid_verified', 'is_verified', 
+            'created_at', 'updated_at'
+        ]
+    
+    def get_verification_status(self, obj):
+        return obj.verification_status
 
 
 class NIDVerificationSerializer(serializers.Serializer):

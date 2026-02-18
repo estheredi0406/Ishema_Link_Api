@@ -32,7 +32,7 @@ class User(AbstractUser):
         unique=True,
         help_text="Rwanda phone number in format: +250 7XX XXX XXX"
     )
-    date_joined = models.DateTimeField(default=timezone.now)
+    
     # National ID - 16 digits
     national_id = models.CharField(
         max_length=16,
@@ -57,7 +57,54 @@ class User(AbstractUser):
         help_text="Sector where agent operates (e.g., 'Kicukiro/Niboye')"
     )
     
+    # ========================================================================
+    # VERIFICATION & KYC FIELDS (Task 2)
+    # ========================================================================
+    
+    # Phone Verification
+    phone_verified = models.BooleanField(
+        default=False,
+        help_text="Phone number verified via OTP"
+    )
+    phone_verified_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="When phone was verified"
+    )
+    
+    # NID Verification
+    nid_verified = models.BooleanField(
+        default=False,
+        help_text="National ID verified"
+    )
+    nid_verified_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="When NID was verified"
+    )
+    
+    # Overall KYC Status
+    is_verified = models.BooleanField(
+        default=False,
+        help_text="Fully verified (phone + NID)"
+    )
+    verified_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="When user became fully verified"
+    )
+    
+    # Account Recovery
+    recovery_email = models.EmailField(
+        blank=True,
+        null=True,
+        help_text="Backup email for account recovery"
+    )
+    
+    # ========================================================================
+    
     # Timestamps
+    date_joined = models.DateTimeField(default=timezone.now)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
@@ -85,3 +132,13 @@ class User(AbstractUser):
     def is_customer(self):
         """Check if user is a customer"""
         return self.user_type == 'CUSTOMER'
+    
+    @property
+    def verification_status(self):
+        """Get verification status summary"""
+        return {
+            'phone_verified': self.phone_verified,
+            'nid_verified': self.nid_verified,
+            'fully_verified': self.is_verified,
+            'can_ship': self.is_verified,  # Users must be verified to ship
+        }
