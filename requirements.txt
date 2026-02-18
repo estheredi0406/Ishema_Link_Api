@@ -30,3 +30,8 @@ faker==22.0.0
 
 # CORS
 django-cors-headers==4.3.1
+
+djangorestframework-simplejwt[crypto]==5.3.1  # JWT with crypto support
+django-axes==6.1.1                             # Rate limiting for login
+cryptography==42.0.0                           # Field encryption
+django-ratelimit==4.1.0

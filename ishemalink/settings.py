@@ -11,14 +11,14 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
 from pathlib import Path
-from decouple import config # this read our .env file to keep secrets safe
+from decouple import config
+from datetime import timedelta
+from cryptography.fernet import Fernet
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
-
-SECRET_KEY = config('django-insecure-*q8t4u0!y047b_ve0fj5_o61)*@-^o7l8=+@p0x2mjbgc(xt@^', default='django-insecure-temp-key-change-in-production')
-
+SECRET_KEY = config('SECRET_KEY', default='django-insecure-*q8t4u0!y047b_ve0fj5_o61)*@-^o7l8=+@p0x2mjbgc(xt@^')
 
 DEBUG = config('DEBUG', default=True, cast=bool)
 
@@ -37,19 +37,24 @@ INSTALLED_APPS = [
     
     # Third-party apps
     'rest_framework',
+    'rest_framework_simplejwt.token_blacklist',  # JWT token blacklist
     'drf_spectacular',
     'corsheaders',
     'django_extensions',
     'django_celery_results',
-    'django_filters',          # Make sure there's a comma here!
+    'django_filters',
     
     # Our apps
     'core',
     'domestic',
     'international',
+    
+    # Security apps (must be at the end)
+    'axes',  # Login attempt tracking
 ]
+
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware',  # ADD THIS - Must be at top
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -57,6 +62,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'axes.middleware.AxesMiddleware',  # Login rate limiting (after AuthenticationMiddleware)
 ]
 
 ROOT_URLCONF = 'ishemalink.urls'
@@ -80,8 +86,6 @@ WSGI_APPLICATION = 'ishemalink.wsgi.application'
 
 
 # Database
-# https://docs.djangoproject.com/en/6.0/ref/settings/#databases
-
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
@@ -91,8 +95,6 @@ DATABASES = {
 
 
 # Password validation
-# https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators
-
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
@@ -110,65 +112,181 @@ AUTH_PASSWORD_VALIDATORS = [
 
 
 # Internationalization
-# https://docs.djangoproject.com/en/6.0/topics/i18n/
-
 LANGUAGE_CODE = 'en-us'
-
-TIME_ZONE = 'UTC'
-
+TIME_ZONE = 'Africa/Kigali'
 USE_I18N = True
-
 USE_TZ = True
 
 
 # Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/6.0/howto/static-files/
-
 STATIC_URL = 'static/'
 
-# Django REST Framework Configuration
+# Default primary key field type
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Custom User Model
+AUTH_USER_MODEL = 'core.User'
+
+
+# ============================================================================
+# AUTHENTICATION BACKENDS
+# ============================================================================
+
+AUTHENTICATION_BACKENDS = [
+    'axes.backends.AxesStandaloneBackend',  # Axes for rate limiting
+    'django.contrib.auth.backends.ModelBackend',  # Default Django auth
+]
+
+
+# ============================================================================
+# DJANGO REST FRAMEWORK CONFIGURATION
+# ============================================================================
+
 REST_FRAMEWORK = {
+    # Hybrid Authentication - Session first, then JWT
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'rest_framework.authentication.SessionAuthentication',  # For web dashboard
+        'rest_framework_simplejwt.authentication.JWTAuthentication',  # For mobile apps
     ],
+    
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
     ],
+    
+    # Rate Limiting
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle',
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '100/hour',   # Anonymous users: 100 requests/hour
+        'user': '1000/hour',  # Authenticated users: 1000 requests/hour
+        'auth': '5/minute',   # Login endpoints: 5 attempts/minute (STRICT)
+    },
+    
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 20,
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
 
-#API Documentation (Swagger/OpenAPI)
+
+# ============================================================================
+# API DOCUMENTATION (SWAGGER/OPENAPI)
+# ============================================================================
+
 SPECTACULAR_SETTINGS = {
-    'TITLE': 'IshemaLink API',
-    'DESCRIPTION': 'Logistics and Courier Management System for Rwanda',
-    'VERSION': '1.0.0',
+    'TITLE': 'IshemaLink Secure API',
+    'DESCRIPTION': 'Logistics and Courier Management System with Enterprise Security',
+    'VERSION': '2.0.0',
     'SERVE_INCLUDE_SCHEMA': False,
-} # this Configures the auto-generated API docs (Swagger UI)
+    'COMPONENT_SPLIT_REQUEST': True,
+    
+    # Security Schemes Documentation
+    'SECURITY': [
+        {'BearerAuth': []},
+        {'CookieAuth': []},
+    ],
+    'APPEND_COMPONENTS': {
+        'securitySchemes': {
+            'BearerAuth': {
+                'type': 'http',
+                'scheme': 'bearer',
+                'bearerFormat': 'JWT',
+                'description': 'JWT authentication for mobile apps. Obtain token from /api/auth/token/obtain/. Include in Authorization header as: Bearer <token>'
+            },
+            'CookieAuth': {
+                'type': 'apiKey',
+                'in': 'cookie',
+                'name': 'sessionid',
+                'description': 'Session authentication for web dashboard. Cookie set automatically after login to /api/auth/login/session/'
+            }
+        }
+    },
+}
 
 
-#CORS Configuration (for frontend development)
+# ============================================================================
+# CORS CONFIGURATION
+# ============================================================================
+
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",      # React default
     "http://localhost:8080",      # Vue default
     "http://127.0.0.1:3000",
-] #Allows frontend apps running on these ports to call our API.
+]
 
 
-#Internationalization
-LANGUAGE_CODE = 'en-us'
-TIME_ZONE = 'Africa/Kigali'      # Rwanda timezone
-USE_I18N = True
-USE_TZ = True 
+# ============================================================================
+# JWT CONFIGURATION
+# ============================================================================
 
-# Custom User Model
-AUTH_USER_MODEL = 'core.User'
+SIMPLE_JWT = {
+    # Token Lifetimes
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),  # Short-lived access token
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),     # Long-lived refresh token
+    
+    # Token Rotation
+    'ROTATE_REFRESH_TOKENS': True,  # Get new refresh token on refresh
+    'BLACKLIST_AFTER_ROTATION': True,  # Blacklist old refresh tokens
+    'UPDATE_LAST_LOGIN': True,  # Update last_login field on token obtain
+    
+    # Token Claims
+    'USER_ID_FIELD': 'id',
+    'USER_ID_CLAIM': 'user_id',
+    
+    # Signing
+    'ALGORITHM': 'HS256',
+    'SIGNING_KEY': SECRET_KEY,
+    
+    # Headers
+    'AUTH_HEADER_TYPES': ('Bearer',),
+    'AUTH_HEADER_NAME': 'HTTP_AUTHORIZATION',
+}
 
-# Default primary key field type
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# Celery Configuration
+# ============================================================================
+# SESSION CONFIGURATION (Web Dashboard)
+# ============================================================================
+
+SESSION_COOKIE_SECURE = config('SESSION_COOKIE_SECURE', default=False, cast=bool)  # True in production (HTTPS)
+SESSION_COOKIE_HTTPONLY = True  # Prevent JavaScript access (XSS protection)
+SESSION_COOKIE_SAMESITE = 'Lax'  # CSRF protection
+SESSION_COOKIE_AGE = 60 * 60 * 8  # 8 hours (auto-logout after browser close)
+
+
+# ============================================================================
+# CSRF PROTECTION
+# ============================================================================
+
+CSRF_COOKIE_SECURE = config('CSRF_COOKIE_SECURE', default=False, cast=bool)  # True in production
+CSRF_COOKIE_HTTPONLY = True
+CSRF_COOKIE_SAMESITE = 'Lax'
+
+
+# ============================================================================
+# SECURITY HEADERS
+# ============================================================================
+
+SECURE_BROWSER_XSS_FILTER = True  # Enable XSS filter in browsers
+SECURE_CONTENT_TYPE_NOSNIFF = True  # Prevent MIME-sniffing
+X_FRAME_OPTIONS = 'DENY'  # Prevent clickjacking
+
+
+# ============================================================================
+# DJANGO AXES (Login Rate Limiting)
+# ============================================================================
+
+AXES_ENABLED = True
+AXES_FAILURE_LIMIT = 5  # Lock account after 5 failed attempts
+AXES_COOLOFF_TIME = timedelta(minutes=10)  # 10-minute lockout period
+AXES_LOCK_OUT_BY_COMBINATION_USER_AND_IP = True  # Lock by user+IP combination
+AXES_RESET_ON_SUCCESS = True  # Reset failed attempts on successful login
+
+
+# ============================================================================
+# CELERY CONFIGURATION (Async Tasks)
+# ============================================================================
+
 CELERY_BROKER_URL = 'redis://localhost:6379/0'
 CELERY_RESULT_BACKEND = 'django-db'
 CELERY_ACCEPT_CONTENT = ['json']
@@ -178,21 +296,15 @@ CELERY_TIMEZONE = 'Africa/Kigali'
 CELERY_TASK_TRACK_STARTED = True
 CELERY_TASK_TIME_LIMIT = 30 * 60  # 30 minutes max per task
 
-# SMS Gateway Settings (simulated for now)
-SMS_GATEWAY_URL = config('SMS_GATEWAY_URL', default='https://sms.example.com/send')
-SMS_API_KEY = config('SMS_API_KEY', default='test-api-key')
-SMS_SENDER_NAME = 'IshemaLink'
 
-# Email Settings (using console backend for testing)
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-DEFAULT_FROM_EMAIL = 'noreply@ishemalink.rw'
+# ============================================================================
+# REDIS CACHE CONFIGURATION
+# ============================================================================
 
-
-# Redis Cache Configuration
 CACHES = {
     'default': {
         'BACKEND': 'django_redis.cache.RedisCache',
-        'LOCATION': 'redis://127.0.0.1:6379/1',  # Different DB than Celery
+        'LOCATION': 'redis://127.0.0.1:6379/1',  # Different DB than Celery (DB 1)
         'OPTIONS': {
             'CLIENT_CLASS': 'django_redis.client.DefaultClient',
         },
@@ -201,6 +313,31 @@ CACHES = {
     }
 }
 
-# Cache time-to-live (TTL) settings
+# Cache TTL Settings
 TARIFF_CACHE_TTL = 60 * 60 * 24 * 7  # 7 days for tariffs
 LOCATION_CACHE_TTL = 60 * 60 * 24 * 30  # 30 days for location data
+
+
+# ============================================================================
+# SMS & EMAIL CONFIGURATION
+# ============================================================================
+
+# SMS Gateway Settings (simulated for now)
+SMS_GATEWAY_URL = config('SMS_GATEWAY_URL', default='https://sms.example.com/send')
+SMS_API_KEY = config('SMS_API_KEY', default='test-api-key')
+SMS_SENDER_NAME = 'IshemaLink'
+
+# Email Settings (console backend for testing)
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+DEFAULT_FROM_EMAIL = 'noreply@ishemalink.rw'
+
+
+
+
+# Encryption key for sensitive fields (NID, Tax ID, etc.)
+# In production: Store in environment variables!
+# Generate new key: from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())
+FIELD_ENCRYPTION_KEY = config(
+    'FIELD_ENCRYPTION_KEY',
+    default=Fernet.generate_key().decode()  # Auto-generate for development
+)
