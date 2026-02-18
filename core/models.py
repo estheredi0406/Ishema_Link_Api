@@ -1,6 +1,7 @@
 """
 Core Models
 Shared models used across the application
+this defines how user data is stored
 """
 from django.contrib.auth.models import AbstractUser
 from django.db import models

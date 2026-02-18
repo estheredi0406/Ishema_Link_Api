@@ -27,7 +27,7 @@ class NotificationService:
         Returns:
             Dict with success status and details
         """
-        logger.info(f"📱 Sending SMS to {phone}")
+        logger.info(f" Sending SMS to {phone}")
         logger.info(f"Message: {message}")
         
         # Simulate API call delay (1-3 seconds)
@@ -43,7 +43,7 @@ class NotificationService:
             'timestamp': time.time()
         }
         
-        logger.info(f"✅ SMS sent successfully to {phone}")
+        logger.info(f"SMS sent successfully to {phone}")
         return result
     
     @staticmethod
@@ -59,7 +59,7 @@ class NotificationService:
         Returns:
             Dict with success status and details
         """
-        logger.info(f"📧 Sending email to {recipient}")
+        logger.info(f"Sending email to {recipient}")
         logger.info(f"Subject: {subject}")
         logger.info(f"Body: {body[:100]}...")
         
@@ -74,7 +74,7 @@ class NotificationService:
             'timestamp': time.time()
         }
         
-        logger.info(f"✅ Email sent successfully to {recipient}")
+        logger.info(f"Email sent successfully to {recipient}")
         return result
     
     @staticmethod

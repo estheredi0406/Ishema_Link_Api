@@ -1,6 +1,7 @@
 """
 Celery configuration for IshemaLink
 Handles async task processing for notifications and background jobs
+This actually send sms in background
 """
 import os
 from celery import Celery
