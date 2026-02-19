@@ -12,13 +12,15 @@ from django.core.validators import RegexValidator
 class User(AbstractUser):
     """
     Custom User model for IshemaLink
-    Supports three user types: Agent, Customer, Admin
+    Supports five user types: Agent, Customer, Admin, Driver, Government Official
     """
     
     USER_TYPE_CHOICES = [
         ('AGENT', 'Agent'),
         ('CUSTOMER', 'Customer'),
         ('ADMIN', 'Admin'),
+        ('DRIVER', 'Driver'),
+        ('GOV_OFFICIAL', 'Government Official'),
     ]
     
     # Phone number with Rwanda format validator
@@ -44,7 +46,7 @@ class User(AbstractUser):
     
     # User type
     user_type = models.CharField(
-        max_length=10,
+        max_length=15,  # Increased to fit 'GOV_OFFICIAL'
         choices=USER_TYPE_CHOICES,
         default='CUSTOMER'
     )
@@ -132,6 +134,16 @@ class User(AbstractUser):
     def is_customer(self):
         """Check if user is a customer"""
         return self.user_type == 'CUSTOMER'
+    
+    @property
+    def is_driver(self):
+        """Check if user is a driver"""
+        return self.user_type == 'DRIVER'
+    
+    @property
+    def is_gov_official(self):
+        """Check if user is a government official"""
+        return self.user_type == 'GOV_OFFICIAL'
     
     @property
     def verification_status(self):

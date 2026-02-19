@@ -6,7 +6,8 @@ from rest_framework_simplejwt.views import TokenRefreshView
 from . import views
 from . import auth_views
 from . import identity_views
-from . import privacy_views  # ADD THIS
+from . import privacy_views
+from . import rbac_views  # ADD THIS
 from .jwt_serializers import CustomTokenObtainPairView
 
 app_name = 'core'
@@ -40,15 +41,19 @@ urlpatterns = [
     path('identity/recover/initiate/', identity_views.recovery_initiate, name='recovery-initiate'),
     path('identity/recover/confirm/', identity_views.recovery_confirm, name='recovery-confirm'),
     
-    # ========================================================================
-    # PRIVACY & GDPR ENDPOINTS (Task 3)
-    # ========================================================================
-    
-    # Data Export & Anonymization
+    # Privacy & GDPR Endpoints
     path('privacy/my-data/', privacy_views.export_my_data, name='my-data'),
     path('privacy/anonymize/', privacy_views.request_anonymization, name='anonymize'),
     path('privacy/consent-history/', privacy_views.my_consent_history, name='consent-history'),
     
     # Admin/Compliance
     path('compliance/audit-logs/', privacy_views.admin_audit_logs, name='audit-logs'),
+    
+    # ========================================================================
+    # RBAC ENDPOINTS (Task 4)
+    # ========================================================================
+    
+    # Role Management
+    path('rbac/roles/', rbac_views.list_roles, name='list-roles'),
+    path('rbac/assign/', rbac_views.assign_role, name='assign-role'),
 ]
