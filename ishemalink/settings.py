@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     'core',
     'domestic',
     'international',
+    'payments',
     
     # Security apps (must be at the end)
     'axes',  # Login attempt tracking
@@ -131,7 +132,6 @@ AUTH_USER_MODEL = 'core.User'
 
 # ============================================================================
 # AUTHENTICATION BACKENDS
-# ============================================================================
 
 AUTHENTICATION_BACKENDS = [
     'axes.backends.AxesStandaloneBackend',  # Axes for rate limiting
@@ -139,9 +139,7 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 
-# ============================================================================
 # DJANGO REST FRAMEWORK CONFIGURATION
-# ============================================================================
 
 REST_FRAMEWORK = {
     # Hybrid Authentication - Session first, then JWT
@@ -171,9 +169,7 @@ REST_FRAMEWORK = {
 }
 
 
-# ============================================================================
 # API DOCUMENTATION (SWAGGER/OPENAPI)
-# ============================================================================
 
 SPECTACULAR_SETTINGS = {
     'TITLE': 'IshemaLink Secure API',
@@ -206,9 +202,7 @@ SPECTACULAR_SETTINGS = {
 }
 
 
-# ============================================================================
 # CORS CONFIGURATION
-# ============================================================================
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",      # React default
@@ -217,9 +211,7 @@ CORS_ALLOWED_ORIGINS = [
 ]
 
 
-# ============================================================================
 # JWT CONFIGURATION
-# ============================================================================
 
 SIMPLE_JWT = {
     # Token Lifetimes
@@ -245,9 +237,7 @@ SIMPLE_JWT = {
 }
 
 
-# ============================================================================
 # SESSION CONFIGURATION (Web Dashboard)
-# ============================================================================
 
 SESSION_COOKIE_SECURE = config('SESSION_COOKIE_SECURE', default=False, cast=bool)  # True in production (HTTPS)
 SESSION_COOKIE_HTTPONLY = True  # Prevent JavaScript access (XSS protection)
@@ -255,27 +245,22 @@ SESSION_COOKIE_SAMESITE = 'Lax'  # CSRF protection
 SESSION_COOKIE_AGE = 60 * 60 * 8  # 8 hours (auto-logout after browser close)
 
 
-# ============================================================================
 # CSRF PROTECTION
-# ============================================================================
 
 CSRF_COOKIE_SECURE = config('CSRF_COOKIE_SECURE', default=False, cast=bool)  # True in production
 CSRF_COOKIE_HTTPONLY = True
 CSRF_COOKIE_SAMESITE = 'Lax'
 
 
-# ============================================================================
 # SECURITY HEADERS
-# ============================================================================
 
 SECURE_BROWSER_XSS_FILTER = True  # Enable XSS filter in browsers
 SECURE_CONTENT_TYPE_NOSNIFF = True  # Prevent MIME-sniffing
 X_FRAME_OPTIONS = 'DENY'  # Prevent clickjacking
 
 
-# ============================================================================
+
 # DJANGO AXES (Login Rate Limiting)
-# ============================================================================
 
 AAXES_ENABLED = False  # CHANGE FROM True TO False (temporarily)
 AXES_FAILURE_LIMIT = 5
@@ -283,9 +268,9 @@ AXES_COOLOFF_TIME = timedelta(minutes=10)
 AXES_LOCKOUT_PARAMETERS = [["username", "ip_address"]]
 AXES_RESET_ON_SUCCESS = True
 
-# ============================================================================
+
 # CELERY CONFIGURATION (Async Tasks)
-# ============================================================================
+
 
 CELERY_BROKER_URL = 'redis://localhost:6379/0'
 CELERY_RESULT_BACKEND = 'django-db'
@@ -297,8 +282,7 @@ CELERY_TASK_TRACK_STARTED = True
 CELERY_TASK_TIME_LIMIT = 30 * 60  # 30 minutes max per task
 
 
-# ============================================================================
-# REDIS CACHE CONFIGURATION
+
 
 
 CACHES = {
@@ -318,9 +302,7 @@ TARIFF_CACHE_TTL = 60 * 60 * 24 * 7  # 7 days for tariffs
 LOCATION_CACHE_TTL = 60 * 60 * 24 * 30  # 30 days for location data
 
 
-# ============================================================================
 # SMS & EMAIL CONFIGURATION
-# ============================================================================
 
 # SMS Gateway Settings (simulated for now)
 SMS_GATEWAY_URL = config('SMS_GATEWAY_URL', default='https://sms.example.com/send')

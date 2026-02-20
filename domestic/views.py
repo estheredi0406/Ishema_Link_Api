@@ -8,7 +8,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters
-from django.db import models  # ADD THIS IMPORT
+from django.db import models
 from .models import DomesticShipment, ShipmentLog
 from .serializers import (
     DomesticShipmentSerializer,
@@ -91,6 +91,12 @@ class DomesticShipmentViewSet(viewsets.ModelViewSet):
         
         # Customers and agents get standard serializer
         return CustomerShipmentSerializer
+    
+    def perform_create(self, serializer):
+        """
+        Automatically set sender to current user when creating shipment
+        """
+        serializer.save(sender=self.request.user)
     
     @action(detail=True, methods=['post'], url_path='update-status')
     def update_status(self, request, pk=None):

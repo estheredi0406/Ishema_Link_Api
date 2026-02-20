@@ -18,7 +18,8 @@ urlpatterns = [
     path('api/', include('core.urls', namespace='core')),
     
     # Domestic shipments  
-    path('api/domestic/', include('domestic.urls', namespace='domestic')),  # ADD THIS
+    path('api/domestic/', include('domestic.urls', namespace='domestic')),  
+    path('api/payments/', include('payments.urls', namespace='payments')),
     
     # API Documentation
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
