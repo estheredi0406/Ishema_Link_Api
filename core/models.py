@@ -7,6 +7,7 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils import timezone 
 from django.core.validators import RegexValidator
+from .encryption import EncryptedCharField
 
 
 class User(AbstractUser):
@@ -37,12 +38,11 @@ class User(AbstractUser):
     
     # National ID - 16 digits
     national_id = models.CharField(
-        max_length=16,
-        unique=True,
-        blank=True,
-        null=True,
-        help_text="16-digit Rwanda National ID"
-    )
+    max_length=255,  # Encrypted data is longer
+    blank=True,
+    null=True,
+    help_text="16-digit Rwanda National ID (encrypted)"
+)
     
     # User type
     user_type = models.CharField(
@@ -59,9 +59,7 @@ class User(AbstractUser):
         help_text="Sector where agent operates (e.g., 'Kicukiro/Niboye')"
     )
     
-    # ========================================================================
-    # VERIFICATION & KYC FIELDS (Task 2)
-    # ========================================================================
+   
     
     # Phone Verification
     phone_verified = models.BooleanField(
@@ -103,7 +101,7 @@ class User(AbstractUser):
         help_text="Backup email for account recovery"
     )
     
-    # ========================================================================
+
     
     # Timestamps
     date_joined = models.DateTimeField(default=timezone.now)

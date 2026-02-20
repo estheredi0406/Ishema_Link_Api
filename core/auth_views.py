@@ -18,6 +18,32 @@ from .serializers import UserSerializer
 class LoginRateThrottle(AnonRateThrottle):
     """Strict rate limiting for login endpoints - 5 per minute"""
     rate = '5/minute'
+    
+    def allow_request(self, request, view):
+        print(f"\n🔍 === THROTTLE DEBUG ===")
+        print(f"Rate: {self.rate}")
+        print(f"Scope: {self.scope}")
+        
+        # Try to get cache key
+        try:
+            cache_key = self.get_cache_key(request, view)
+            print(f"Cache key: {cache_key}")
+        except Exception as e:
+            print(f"Cache key error: {e}")
+        
+        result = super().allow_request(request, view)
+        
+        print(f"Allow request: {result}")
+        
+        try:
+            wait = self.wait()
+            print(f"Wait time: {wait}")
+        except Exception as e:
+            print(f"Wait time error: {e}")
+            
+        print(f"======================\n")
+        
+        return result
 
 
 @extend_schema(

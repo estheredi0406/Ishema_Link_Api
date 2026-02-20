@@ -277,12 +277,11 @@ X_FRAME_OPTIONS = 'DENY'  # Prevent clickjacking
 # DJANGO AXES (Login Rate Limiting)
 # ============================================================================
 
-AXES_ENABLED = True
-AXES_FAILURE_LIMIT = 5  # Lock account after 5 failed attempts
-AXES_COOLOFF_TIME = timedelta(minutes=10)  # 10-minute lockout period
-AXES_LOCKOUT_PARAMETERS = [["username", "ip_address"]] # Lock by user+IP combination
-AXES_RESET_ON_SUCCESS = True  # Reset failed attempts on successful login
-
+AAXES_ENABLED = False  # CHANGE FROM True TO False (temporarily)
+AXES_FAILURE_LIMIT = 5
+AXES_COOLOFF_TIME = timedelta(minutes=10)
+AXES_LOCKOUT_PARAMETERS = [["username", "ip_address"]]
+AXES_RESET_ON_SUCCESS = True
 
 # ============================================================================
 # CELERY CONFIGURATION (Async Tasks)
@@ -300,7 +299,7 @@ CELERY_TASK_TIME_LIMIT = 30 * 60  # 30 minutes max per task
 
 # ============================================================================
 # REDIS CACHE CONFIGURATION
-# ============================================================================
+
 
 CACHES = {
     'default': {
