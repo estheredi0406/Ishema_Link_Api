@@ -1,0 +1,120 @@
+# =============================================================================
+# IshemaLink API - Environment Configuration
+# Rwanda Cloud Deployment
+# =============================================================================
+
+# Django Settings
+DEBUG=False
+SECRET_KEY=your-super-secret-key-change-this-in-production-minimum-50-characters
+DJANGO_SETTINGS_MODULE=ishemalink.production_settings
+ALLOWED_HOSTS=localhost,127.0.0.1,ishemalink.rw,api.ishemalink.rw
+
+# Database (PostgreSQL)
+DATABASE_URL=postgresql://ishema:ishema_secure_pass_2026@db:5432/ishemalink
+POSTGRES_DB=ishemalink
+POSTGRES_USER=ishema
+POSTGRES_PASSWORD=ishema_secure_pass_2026
+
+# Redis Cache & Celery
+REDIS_URL=redis://redis:6379/0
+
+# Email Configuration (SendGrid/Mailgun)
+EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend
+EMAIL_HOST=smtp.sendgrid.net
+EMAIL_PORT=587
+EMAIL_USE_TLS=True
+EMAIL_HOST_USER=apikey
+EMAIL_HOST_PASSWORD=YOUR_SENDGRID_API_KEY
+DEFAULT_FROM_EMAIL=noreply@ishemalink.rw
+
+# SMS Configuration (Africa's Talking)
+AFRICAS_TALKING_USERNAME=sandbox
+AFRICAS_TALKING_API_KEY=YOUR_AFRICAS_TALKING_API_KEY
+AFRICAS_TALKING_SENDER_ID=ISHEMALINK
+
+# MTN Mobile Money API
+MTN_MOMO_API_USER=YOUR_MTN_API_USER
+MTN_MOMO_API_KEY=YOUR_MTN_API_KEY
+MTN_MOMO_SUBSCRIPTION_KEY=YOUR_MTN_SUBSCRIPTION_KEY
+MTN_MOMO_ENVIRONMENT=sandbox
+
+# Airtel Money API
+AIRTEL_MONEY_CLIENT_ID=YOUR_AIRTEL_CLIENT_ID
+AIRTEL_MONEY_CLIENT_SECRET=YOUR_AIRTEL_CLIENT_SECRET
+AIRTEL_MONEY_ENVIRONMENT=sandbox
+
+# Security Settings
+SECURE_SSL_REDIRECT=True
+SESSION_COOKIE_SECURE=True
+CSRF_COOKIE_SECURE=True
+
+# CORS Settings
+CORS_ALLOWED_ORIGINS=https://ishemalink.rw,https://www.ishemalink.rw
+
+# Sentry Error Tracking (Optional)
+SENTRY_DSN=
+
+# Application Settings
+TIME_ZONE=Africa/Kigali
+LANGUAGE_CODE=en-us
+```
+
+---
+
+## **Step 7: Create .dockerignore**
+
+Create **`.dockerignore`**:
+```
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+*.egg-info/
+dist/
+build/
+
+# Django
+*.log
+db.sqlite3
+media/
+staticfiles/
+htmlcov/
+
+# Tests
+.pytest_cache/
+.coverage
+coverage.xml
+*.cover
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Git
+.git/
+.gitignore
+
+# Docker
+docker-compose*.yml
+Dockerfile*
+
+# Documentation
+README.md
+docs/
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# OS
+.DS_Store
+Thumbs.db
