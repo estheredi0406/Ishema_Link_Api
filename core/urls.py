@@ -49,9 +49,7 @@ urlpatterns = [
     # Admin/Compliance
     path('compliance/audit-logs/', privacy_views.admin_audit_logs, name='audit-logs'),
     
-    # ========================================================================
     # RBAC ENDPOINTS (Task 4)
-    # ========================================================================
     
     # Role Management
     path('rbac/roles/', rbac_views.list_roles, name='list-roles'),

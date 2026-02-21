@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     'domestic',
     'international',
     'payments',
+    'bookings',
     
     # Security apps (must be at the end)
     'axes',  # Login attempt tracking

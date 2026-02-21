@@ -46,11 +46,11 @@ class TariffService:
         # Try cache first
         zone = cache.get(cache_key)
         if zone is not None:
-            logger.info(f"✅ Cache HIT: Zone for {district}")
+            logger.info(f"Cache HIT: Zone for {district}")
             return zone
         
         # Cache miss - query database
-        logger.info(f"❌ Cache MISS: Querying zone for {district}")
+        logger.info(f"Cache MISS: Querying zone for {district}")
         
         try:
             # Iterate through zones (SQLite-compatible approach)
@@ -85,12 +85,12 @@ class TariffService:
         # Try cache first
         cached_result = cache.get(cache_key)
         if cached_result:
-            logger.info(f"✅ Cache HIT: Tariff calculation")
+            logger.info(f"Cache HIT: Tariff calculation")
             cached_result['cache_hit'] = True
             return cached_result
         
         # Cache miss - calculate tariff
-        logger.info(f"❌ Cache MISS: Calculating tariff")
+        logger.info(f"Cache MISS: Calculating tariff")
         
         # Get zones
         origin_zone = TariffService.get_zone_for_district(origin_district)
@@ -144,12 +144,12 @@ class TariffService:
         
         # Cache the result
         cache.set(cache_key, result, timeout=TariffService.CACHE_TTL)
-        logger.info(f"💾 Cached tariff result")
+        logger.info(f"Cached tariff result")
         
         return result
     
     @staticmethod
     def clear_tariff_cache():
         """Clear all tariff-related caches"""
-        logger.info("🗑️ Clearing tariff cache")
+        logger.info("Clearing tariff cache")
         cache.clear()

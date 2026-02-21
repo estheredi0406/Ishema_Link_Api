@@ -20,6 +20,9 @@ urlpatterns = [
     # Domestic shipments  
     path('api/domestic/', include('domestic.urls', namespace='domestic')),  
     path('api/payments/', include('payments.urls', namespace='payments')),
+
+    #Bookings
+    path('api/bookings/', include('bookings.urls', namespace='bookings')),
     
     # API Documentation
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
