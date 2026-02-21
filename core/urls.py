@@ -10,6 +10,7 @@ from . import admin_dashboard_views
 from . import privacy_views
 from . import rbac_views  # ADD THIS
 from .jwt_serializers import CustomTokenObtainPairView
+from . import health_views
 
 app_name = 'core'
 
@@ -61,5 +62,10 @@ urlpatterns = [
     path('admin/dashboard/active-shipments/', admin_dashboard_views.active_shipments, name='active-shipments'),
     path('admin/dashboard/revenue/', admin_dashboard_views.revenue_breakdown, name='revenue-breakdown'),
     path('admin/dashboard/health/', admin_dashboard_views.system_health, name='system-health'),
+
+
+    path('health/', health_views.health_check, name='health-check'),
+    path('ready/', health_views.readiness_check, name='readiness'),
+    path('alive/', health_views.liveness_check, name='liveness'),
 
 ]

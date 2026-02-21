@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
+import os
 from pathlib import Path
 from decouple import config
 from datetime import timedelta
@@ -266,7 +267,7 @@ X_FRAME_OPTIONS = 'DENY'  # Prevent clickjacking
 
 # DJANGO AXES (Login Rate Limiting)
 
-AAXES_ENABLED = False  # CHANGE FROM True TO False (temporarily)
+AXES_ENABLED = False  # CHANGE FROM True TO False (temporarily)
 AXES_FAILURE_LIMIT = 5
 AXES_COOLOFF_TIME = timedelta(minutes=10)
 AXES_LOCKOUT_PARAMETERS = [["username", "ip_address"]]
@@ -275,8 +276,7 @@ AXES_RESET_ON_SUCCESS = True
 
 # CELERY CONFIGURATION (Async Tasks)
 
-
-CELERY_BROKER_URL = 'redis://localhost:6379/0'
+CELERY_BROKER_URL = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
 CELERY_RESULT_BACKEND = 'django-db'
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
@@ -286,13 +286,12 @@ CELERY_TASK_TRACK_STARTED = True
 CELERY_TASK_TIME_LIMIT = 30 * 60  # 30 minutes max per task
 
 
-
-
+# REDIS CACHE CONFIGURATION
 
 CACHES = {
     'default': {
         'BACKEND': 'django_redis.cache.RedisCache',
-        'LOCATION': 'redis://127.0.0.1:6379/1',  # Different DB than Celery (DB 1)
+        'LOCATION': os.getenv('REDIS_URL', 'redis://127.0.0.1:6379/1'),  # Use env var, fallback to localhost
         'OPTIONS': {
             'CLIENT_CLASS': 'django_redis.client.DefaultClient',
         },
@@ -318,7 +317,7 @@ EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 DEFAULT_FROM_EMAIL = 'noreply@ishemalink.rw'
 
 
-
+# ENCRYPTION
 
 # Encryption key for sensitive fields (NID, Tax ID, etc.)
 # In production: Store in environment variables!
