@@ -1,31 +1,22 @@
 """
-Domestic app URL configuration
+Domestic Shipment URLs
 """
-from django.urls import path, include
-from rest_framework.routers import DefaultRouter
-from . import views
-from . import tariff_views
-from . import manifest_views
-from . import government_views  # ADD THIS
-
-router = DefaultRouter()
-router.register(r'shipments', views.DomesticShipmentViewSet, basename='shipment')
-router.register(r'manifests', manifest_views.ManifestViewSet, basename='manifest')
+from django.urls import path
+from . import views, government_views
 
 app_name = 'domestic'
 
 urlpatterns = [
-    path('', include(router.urls)),
+    # Shipment CRUD
+    path('shipments/', views.DomesticShipmentViewSet.as_view({'get': 'list', 'post': 'create'}), name='shipment-list'),
+    path('shipments/<int:pk>/', views.DomesticShipmentViewSet.as_view({'get': 'retrieve', 'put': 'update', 'patch': 'partial_update', 'delete': 'destroy'}), name='shipment-detail'),
     
-    # Tariff endpoints
-    path('tariff/calculate/', tariff_views.TariffCalculateView.as_view(), name='tariff-calculate'),
-    path('tariff/clear-cache/', tariff_views.TariffCacheClearView.as_view(), name='tariff-clear-cache'),
+    # Custom actions
+    path('shipments/<int:pk>/update-status/', views.DomesticShipmentViewSet.as_view({'post': 'update_status'}), name='shipment-update-status'),
+    path('shipments/<int:pk>/tracking/', views.DomesticShipmentViewSet.as_view({'get': 'tracking'}), name='shipment-tracking'),
+    path('shipments/batch-update/', views.DomesticShipmentViewSet.as_view({'post': 'batch_update'}), name='shipment-batch-update'),
     
-    # ========================================================================
-    # GOVERNMENT PORTAL (Task 4)
-    # ========================================================================
-    
-    # Government Read-Only Access
+    # Government portal (correct function names!)
     path('gov/shipments/', government_views.gov_all_shipments, name='gov-shipments'),
     path('gov/statistics/', government_views.gov_statistics, name='gov-statistics'),
     path('gov/manifests/', government_views.gov_all_manifests, name='gov-manifests'),

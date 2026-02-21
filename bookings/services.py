@@ -11,6 +11,7 @@ from domestic.models import DomesticShipment
 from domestic.tariff_service import TariffService
 from payments.models import Payment
 from payments.momo_service import MobileMoneyService
+from notifications.services import NotificationService
 from .models import Booking
 
 logger = logging.getLogger(__name__)
@@ -25,7 +26,8 @@ class BookingService:
     2. Create shipment (status: AWAITING_PAYMENT)
     3. Create booking record
     4. Initiate payment
-    5. Return booking details with payment info
+    5. Send notification to user
+    6. Return booking details with payment info
     
     Payment webhook will activate shipment when payment succeeds
     """
@@ -150,6 +152,14 @@ class BookingService:
             
             logger.info(f"Payment initiated: {payment.transaction_ref}")
             
+            # Step 5: Send booking confirmation notification
+            try:
+                NotificationService.notify_booking_created(booking)
+                logger.info(f"📱 Booking notification sent to {user.phone}")
+            except Exception as notif_error:
+                logger.error(f"Failed to send notification: {notif_error}")
+                # Don't fail the booking if notification fails
+            
             # Return booking details
             return {
                 'success': True,
@@ -176,7 +186,8 @@ class BookingService:
                 'next_steps': [
                     'Enter your Mobile Money PIN on your phone',
                     'Payment will be confirmed automatically',
-                    'Shipment will be activated for pickup'
+                    'Shipment will be activated for pickup',
+                    'SMS confirmation sent to your phone'
                 ]
             }
             

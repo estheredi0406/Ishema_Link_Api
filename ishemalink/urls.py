@@ -11,6 +11,10 @@ urlpatterns = [
     # Admin site
     path('admin/', admin.site.urls),
     
+    
+    # ... existing URLs ...
+    path('api/notifications/', include('notifications.urls', namespace='notifications')),  # ADD THIS
+
     # API Root
     path('api/', api_root, name='api-root'),
     

@@ -50,9 +50,12 @@ INSTALLED_APPS = [
     'international',
     'payments',
     'bookings',
+    'notifications',
+
     
     # Security apps (must be at the end)
     'axes',  # Login attempt tracking
+
 ]
 
 MIDDLEWARE = [

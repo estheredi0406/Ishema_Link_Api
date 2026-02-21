@@ -6,6 +6,7 @@ from rest_framework_simplejwt.views import TokenRefreshView
 from . import views
 from . import auth_views
 from . import identity_views
+from . import admin_dashboard_views
 from . import privacy_views
 from . import rbac_views  # ADD THIS
 from .jwt_serializers import CustomTokenObtainPairView
@@ -54,4 +55,11 @@ urlpatterns = [
     # Role Management
     path('rbac/roles/', rbac_views.list_roles, name='list-roles'),
     path('rbac/assign/', rbac_views.assign_role, name='assign-role'),
+
+    # Dashboard endpoints
+    path('admin/dashboard/summary/', admin_dashboard_views.dashboard_summary, name='dashboard-summary'),
+    path('admin/dashboard/active-shipments/', admin_dashboard_views.active_shipments, name='active-shipments'),
+    path('admin/dashboard/revenue/', admin_dashboard_views.revenue_breakdown, name='revenue-breakdown'),
+    path('admin/dashboard/health/', admin_dashboard_views.system_health, name='system-health'),
+
 ]

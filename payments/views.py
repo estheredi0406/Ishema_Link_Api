@@ -18,6 +18,7 @@ from .serializers import (
 )
 from .momo_service import MobileMoneyService
 from domestic.models import DomesticShipment
+from notifications.services import NotificationService  # ADD THIS
 import logging
 
 logger = logging.getLogger(__name__)
@@ -129,7 +130,7 @@ def initiate_payment(request):
             user_agent=request.META.get('HTTP_USER_AGENT', '')[:500]
         )
         
-        logger.info(f"Payment initiated: {payment.transaction_ref} for shipment {shipment.tracking_code}")
+        logger.info(f"💳 Payment initiated: {payment.transaction_ref} for shipment {shipment.tracking_code}")
         
         return Response({
             'payment_id': str(payment.payment_id),
@@ -189,6 +190,9 @@ def check_payment_status(request, transaction_ref):
         if payment.shipment:
             payment.shipment.status = 'PENDING'  # Ready for pickup
             payment.shipment.save()
+            
+            # Send notification
+            NotificationService.notify_payment_success(payment)
     
     elif payment.status == 'FAILED':
         payment.failed_at = timezone.now()
@@ -196,7 +200,7 @@ def check_payment_status(request, transaction_ref):
     payment.save()
     
     if old_status != payment.status:
-        logger.info(f"Payment status updated: {transaction_ref} → {payment.status}")
+        logger.info(f"💳 Payment status updated: {transaction_ref} → {payment.status}")
     
     return Response(PaymentSerializer(payment).data, status=status.HTTP_200_OK)
 
@@ -263,8 +267,11 @@ def payment_webhook(request):
                     payment.shipment.status = 'PENDING'
                     payment.shipment.save()
                     
-                    logger.info(f"Payment successful: {transaction_ref}")
+                    logger.info(f"✅ Payment successful: {transaction_ref}")
                     logger.info(f"   Shipment {payment.shipment.tracking_code} activated")
+                    
+                    # Send success notification
+                    NotificationService.notify_payment_success(payment)
             
             elif webhook_status == 'FAILED':
                 payment.failed_at = timezone.now()
@@ -274,7 +281,7 @@ def payment_webhook(request):
                     payment.shipment.status = 'CANCELLED'
                     payment.shipment.save()
                     
-                    logger.warning(f"Payment failed: {transaction_ref}")
+                    logger.warning(f"❌ Payment failed: {transaction_ref}")
                     logger.warning(f"   Shipment {payment.shipment.tracking_code} cancelled")
             
             payment.save()
