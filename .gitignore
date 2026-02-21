@@ -32,3 +32,10 @@ Thumbs.db
 .pytest_cache/
 .coverage
 htmlcov/
+
+gunicorn.ctl
+*.log
+__pycache__/
+db.sqlite3
+.env
+venv/
