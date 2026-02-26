@@ -5,15 +5,14 @@ Main routing file that includes all app URLs
 from django.contrib import admin
 from django.urls import path, include
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
-from core.views import api_root
+from core.views import api_root 
 
 urlpatterns = [
     # Admin site
     path('admin/', admin.site.urls),
     
-    
-    # ... existing URLs ...
-    path('api/notifications/', include('notifications.urls', namespace='notifications')),  # ADD THIS
+    path('api/notifications/', include('notifications.urls', namespace='notifications')),  
+    path('api/analytics/', include('domestic.analytics_urls')), 
 
     # API Root
     path('api/', api_root, name='api-root'),

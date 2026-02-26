@@ -69,7 +69,8 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'axes.middleware.AxesMiddleware',  # Login rate limiting (after AuthenticationMiddleware)
-    'core.audit_middleware.AuditMiddleware'
+    'core.audit_middleware.AuditMiddleware',
+    'core.maintenance_middleware.MaintenanceMiddleware'
 ]
 
 ROOT_URLCONF = 'ishemalink.urls'
@@ -135,7 +136,6 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 AUTH_USER_MODEL = 'core.User'
 
 
-# ============================================================================
 # AUTHENTICATION BACKENDS
 
 AUTHENTICATION_BACKENDS = [

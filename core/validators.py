@@ -21,7 +21,7 @@ def validate_rwanda_phone(phone: str) -> Tuple[bool, str]:
         - +250 788 123 456
         - +250 7 88 123 456
     """
-    # Remove all spaces for validation
+   
     clean_phone = phone.replace(" ", "")
     
     # Must start with +250

@@ -1,193 +1,117 @@
-"""
-Domestic Shipment Views
-API endpoints for shipment management and tracking
-"""
-from rest_framework import viewsets, status
+from rest_framework import viewsets, status, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated, AllowAny
-from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import filters
-from django.db import models
+from django.shortcuts import get_object_or_404
+from django.utils import timezone
+from django.db import transaction
+import logging
+
 from .models import DomesticShipment, ShipmentLog
 from .serializers import (
-    DomesticShipmentSerializer,
-    ShipmentCreateSerializer,
+    DomesticShipmentSerializer, 
+    ShipmentCreateSerializer, 
     StatusUpdateSerializer,
     BatchStatusUpdateSerializer,
     ShipmentLogSerializer
 )
-from .tasks import update_shipment_status_task, batch_update_shipments_task
-from core.permissions import IsShipmentOwner, CanViewFinancialData
-from .rbac_serializers import DriverShipmentSerializer, CustomerShipmentSerializer, GovOfficialShipmentSerializer
+
+logger = logging.getLogger(__name__)
 
 
 class DomesticShipmentViewSet(viewsets.ModelViewSet):
-    """
-    ViewSet for managing shipments with RBAC
-    Different users see different data based on their role
-    """
-    permission_classes = [IsAuthenticated, IsShipmentOwner]
-    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    filterset_fields = ['status', 'transport_mode', 'origin_district', 'destination_district']
-    search_fields = ['tracking_code', 'receiver_name', 'receiver_phone']
-    ordering_fields = ['created_at', 'updated_at', 'status']
-    ordering = ['-created_at']
-    
-    def get_queryset(self):
-        """
-        Filter queryset based on user role
-        - Customers: Only their own shipments
-        - Agents: Shipments in their sector
-        - Drivers: Shipments assigned to them
-        - Admin/Gov: All shipments
-        """
-        user = self.request.user
-        
-        # Admin and Gov officials see all
-        if user.user_type in ['ADMIN', 'GOV_OFFICIAL']:
-            return DomesticShipment.objects.all()
-        
-        # Agents see shipments in their sector
-        if user.is_agent and user.assigned_sector:
-            return DomesticShipment.objects.filter(
-                models.Q(origin_sector=user.assigned_sector) |
-                models.Q(destination_sector=user.assigned_sector)
-            )
-        
-        # Customers see shipments they sent or received
-        if user.is_customer:
-            return DomesticShipment.objects.filter(
-                models.Q(sender=user) |
-                models.Q(receiver_phone=user.phone)
-            )
-        
-        # Drivers see shipments in their manifests
-        if user.is_driver:
-            # For now, show all (we'll refine with manifest assignment)
-            return DomesticShipment.objects.all()
-        
-        # Default: empty queryset
-        return DomesticShipment.objects.none()
+    queryset = DomesticShipment.objects.all().prefetch_related('logs').order_by('-created_at')
+    serializer_class = DomesticShipmentSerializer
     
     def get_serializer_class(self):
-        """
-        Return different serializers based on user role
-        Field-level security: Drivers don't see pricing
-        """
-        user = self.request.user
-        
-        # Different serializer for create action
         if self.action == 'create':
             return ShipmentCreateSerializer
+        if self.action == 'update_status':
+            return StatusUpdateSerializer
+        if self.action == 'batch_update':
+            return BatchStatusUpdateSerializer
+        return DomesticShipmentSerializer
+
+    def create(self, request, *args, **kwargs):
+        """Override create to ensure proper response with price"""
+        logger.info("📝 CREATE REQUEST RECEIVED")
+        logger.info(f"   Data: {request.data}")
         
-        # Drivers get limited serializer (no pricing)
-        if user.is_driver:
-            return DriverShipmentSerializer
+        serializer = self.get_serializer(data=request.data)
         
-        # Gov officials get full data serializer
-        if user.is_gov_official:
-            return GovOfficialShipmentSerializer
+        if not serializer.is_valid():
+            logger.error(f"❌ Validation error: {serializer.errors}")
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
-        # Customers and agents get standard serializer
-        return CustomerShipmentSerializer
-    
+        # This calls serializer.create() and calculates the price
+        shipment = serializer.save(sender=request.user)
+        
+        logger.info(f"✅ Shipment saved! Price: {shipment.price}")
+        
+        # NOW return the FULL serializer with all fields including price!
+        response_serializer = DomesticShipmentSerializer(shipment)
+        
+        return Response(response_serializer.data, status=status.HTTP_201_CREATED)
+
     def perform_create(self, serializer):
-        """
-        Automatically set sender to current user when creating shipment
-        """
-        serializer.save(sender=self.request.user)
-    
+        """Pass the authenticated user to the serializer's save method"""
+        logger.info(f"👤 Creating shipment for user: {self.request.user}")
+        shipment = serializer.save(sender=self.request.user)
+        logger.info(f"📦 Shipment created: {shipment.tracking_code}, price={shipment.price}")
+        return shipment
+
     @action(detail=True, methods=['post'], url_path='update-status')
     def update_status(self, request, pk=None):
-        """
-        POST /api/domestic/shipments/{id}/update-status/
-        Update shipment status asynchronously
-        
-        Returns HTTP 202 Accepted (task queued)
-        """
+        """Updates the status of a single shipment and logs the change"""
         shipment = self.get_object()
         serializer = StatusUpdateSerializer(data=request.data)
         
         if serializer.is_valid():
-            # Queue async task
-            task = update_shipment_status_task.delay(
-                shipment_id=shipment.id,
-                new_status=serializer.validated_data['status'],
-                location=serializer.validated_data.get('location', ''),
-                notes=serializer.validated_data.get('notes', '')
-            )
-            
-            return Response({
-                'message': 'Status update processing',
-                'tracking_code': shipment.tracking_code,
-                'new_status': serializer.validated_data['status'],
-                'task_id': task.id,
-                'note': 'Notifications will be sent to sender and receiver'
-            }, status=status.HTTP_202_ACCEPTED)
-        
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
-    @action(detail=True, methods=['get'], url_path='tracking')
-    def tracking(self, request, pk=None):
-        """
-        GET /api/domestic/shipments/{id}/tracking/
-        Get full tracking history for this shipment
-        """
-        shipment = self.get_object()
-        logs = ShipmentLog.objects.filter(shipment=shipment).order_by('created_at')
-        
-        return Response({
-            'tracking_code': shipment.tracking_code,
-            'current_status': shipment.get_status_display(),
-            'created_at': shipment.created_at,
-            'picked_up_at': shipment.picked_up_at,
-            'delivered_at': shipment.delivered_at,
-            'history': ShipmentLogSerializer(logs, many=True).data
-        }, status=status.HTTP_200_OK)
-    
-    @action(detail=False, methods=['post'], url_path='batch-update')
-    def batch_update(self, request):
-        """
-        POST /api/domestic/shipments/batch-update/
-        Update multiple shipments at once
-        
-        Body:
-        {
-            "tracking_codes": ["RW-260216-1234", "RW-260216-5678"],
-            "status": "IN_TRANSIT",
-            "location": "Nyabugogo Hub",
-            "notes": "Loaded onto bus"
-        }
-        """
-        serializer = BatchStatusUpdateSerializer(data=request.data)
-        
-        if serializer.is_valid():
-            tracking_codes = serializer.validated_data['tracking_codes']
             new_status = serializer.validated_data['status']
             
-            # Get shipment IDs
-            shipments = DomesticShipment.objects.filter(
-                tracking_code__in=tracking_codes
-            ).values_list('id', flat=True)
+            with transaction.atomic():
+                if new_status == 'PICKED_UP':
+                    shipment.picked_up_at = timezone.now()
+                elif new_status == 'DELIVERED':
+                    shipment.delivered_at = timezone.now()
+                
+                shipment.status = new_status
+                shipment.save()
+                
+                ShipmentLog.objects.create(
+                    shipment=shipment,
+                    status=new_status,
+                    location=serializer.validated_data.get('location', ''),
+                    notes=serializer.validated_data.get('notes', ''),
+                    created_by=request.user
+                )
             
-            if not shipments:
-                return Response({
-                    'error': 'No shipments found with provided tracking codes'
-                }, status=status.HTTP_404_NOT_FOUND)
+            return Response({'status': 'Status updated successfully'}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=True, methods=['get'])
+    def tracking(self, request, pk=None):
+        """Returns the log history for a specific shipment"""
+        shipment = self.get_object()
+        logs = shipment.logs.all().order_by('-created_at')
+        serializer = ShipmentLogSerializer(logs, many=True)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['post'], url_path='batch-update')
+    def batch_update(self, request):
+        """Updates multiple shipments at once via tracking codes"""
+        serializer = BatchStatusUpdateSerializer(data=request.data)
+        if serializer.is_valid():
+            codes = serializer.validated_data['tracking_codes']
+            new_status = serializer.validated_data['status']
             
-            # Queue async batch task
-            task = batch_update_shipments_task.delay(
-                shipment_ids=list(shipments),
-                new_status=new_status,
-                location=serializer.validated_data.get('location', ''),
-                notes=serializer.validated_data.get('notes', '')
+            updated_count = DomesticShipment.objects.filter(tracking_code__in=codes).update(
+                status=new_status,
+                updated_at=timezone.now()
             )
             
             return Response({
-                'message': f'Batch update processing for {len(shipments)} shipments',
-                'task_id': task.id,
-                'shipment_count': len(shipments)
-            }, status=status.HTTP_202_ACCEPTED)
-        
+                'message': f'Successfully updated {updated_count} shipments',
+                'updated_count': updated_count
+            }, status=status.HTTP_200_OK)
+            
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

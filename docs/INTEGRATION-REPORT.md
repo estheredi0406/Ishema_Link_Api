@@ -7,7 +7,7 @@
 
 ---
 
-## Executive Summary
+## vSummary
 
 This report documents how IshemaLink successfully unified domestic (Rwanda-only) and international (cross-border EAC) shipment workflows into a single cohesive system while maintaining distinct business rules for each type.
 

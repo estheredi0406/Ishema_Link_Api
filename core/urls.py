@@ -10,7 +10,8 @@ from . import admin_dashboard_views
 from . import privacy_views
 from . import rbac_views  # ADD THIS
 from .jwt_serializers import CustomTokenObtainPairView
-from . import health_views
+from . import health_views, metrics_views
+from . import govtech_views
 
 app_name = 'core'
 
@@ -65,7 +66,18 @@ urlpatterns = [
 
 
     path('health/', health_views.health_check, name='health-check'),
+    path('health/deep/', metrics_views.deep_health_check, name='deep-health-check'),
     path('ready/', health_views.readiness_check, name='readiness'),
     path('alive/', health_views.liveness_check, name='liveness'),
+    
+    # Operations & Monitoring
+    path('ops/metrics/', metrics_views.prometheus_metrics, name='prometheus-metrics'),
+    path('ops/maintenance/toggle/', metrics_views.toggle_maintenance, name='maintenance-toggle'),
+    path('ops/maintenance/status/', metrics_views.check_maintenance, name='maintenance-status'),
 
+    # Government Integration Endpoints
+    path('gov/ebm/sign-receipt/', govtech_views.ebm_sign_receipt, name='ebm-sign-receipt'),
+    path('gov/rura/verify-license/<str:license_no>/', govtech_views.rura_verify_license, name='rura-verify-license'),
+    path('gov/customs/generate-manifest/', govtech_views.customs_generate_manifest, name='customs-generate-manifest'),
+    path('gov/customs/manifest/<str:manifest_id>/download/', govtech_views.download_manifest_xml, name='download-manifest'),
 ]
